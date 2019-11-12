@@ -1,38 +1,38 @@
 import java.util.Arrays;
 
-import org.jacop.constraints.AbsXeqY;
 import org.jacop.constraints.Alldiff;
 import org.jacop.constraints.Constraint;
+import org.jacop.constraints.Count;
 import org.jacop.constraints.Distance;
-import org.jacop.constraints.Element;
 import org.jacop.constraints.IfThenElse;
+import org.jacop.constraints.Linear;
 import org.jacop.constraints.LinearInt;
-import org.jacop.constraints.Max;
-import org.jacop.constraints.Min;
 import org.jacop.constraints.Or;
 import org.jacop.constraints.PrimitiveConstraint;
+import org.jacop.constraints.Reified;
 import org.jacop.constraints.Sum;
-import org.jacop.constraints.SumInt;
 import org.jacop.constraints.XeqC;
+import org.jacop.constraints.XmulCeqZ;
+import org.jacop.constraints.XmulYeqC;
 import org.jacop.constraints.XplusCeqZ;
-import org.jacop.constraints.knapsack.Knapsack;
-import org.jacop.core.*;
-import org.jacop.floats.search.Optimize;
+import org.jacop.constraints.XplusYeqC;
+import org.jacop.core.IntVar;
+import org.jacop.core.Store;
+import org.jacop.floats.constraints.PminusQeqR;
 import org.jacop.search.DepthFirstSearch;
-import org.jacop.search.IndomainMax;
 import org.jacop.search.IndomainMin;
-import org.jacop.search.LargestDomain;
 import org.jacop.search.Search;
 import org.jacop.search.SelectChoicePoint;
 import org.jacop.search.SimpleSelect;
 
 public class Photo {
 	public static void main(String[] args) {
-		int n = 9; // Number of people in photo.
-		int n_prefs = 17;
+		int n = 15; // 15 // Number of people in photo.
+		int n_prefs = 20; // 17;
 		// preferences
-		int[][] prefs = { { 1, 3 }, { 1, 5 }, { 1, 8 }, { 2, 5 }, { 2, 9 }, { 3, 4 }, { 3, 5 }, { 4, 1 }, { 4, 5 },
-				{ 5, 6 }, { 5, 1 }, { 6, 1 }, { 6, 9 }, { 7, 3 }, { 7, 8 }, { 8, 9 }, { 8, 7 } };
+		int[][] prefs = { { 1, 3 }, { 1, 5 }, { 2, 5 }, { 2, 8 }, { 2, 9 }, { 3, 4 }, { 3, 5 }, { 4, 1 }, { 4, 15 },
+				{ 4, 13 }, { 5, 1 }, { 6, 10 }, { 6, 9 }, { 7, 3 }, { 7, 5 }, { 8, 9 }, { 8, 7 }, { 8, 14 }, { 9, 13 },
+				{ 10, 11 } };
 		solve(n, n_prefs, prefs);
 	}
 
@@ -48,21 +48,30 @@ public class Photo {
 			IntVar sat = new IntVar(store, "sat" + 1, 0, numPrefs);
 			satisfied[i - 1] = sat;
 		}
-
+		IntVar distance = new IntVar(store, "distance", 1, 1);
 		for (int i = 0; i < numPrefs; i++) {
-			PrimitiveConstraint or = new Or(
-					new XplusCeqZ(arrangement[prefs[i][0] - 1], 1, arrangement[prefs[i][1] - 1]),
-					new XplusCeqZ(arrangement[prefs[i][0] - 1], -1, arrangement[prefs[i][1] - 1]));
-			PrimitiveConstraint one = new XeqC(satisfied[i], 1);
-			PrimitiveConstraint zero = new XeqC(satisfied[i], 0);
-			store.impose(new IfThenElse(or, one, zero));
+			// Use XplusYeqC instead in combination with Reified, and Abs/Distance.
+			PrimitiveConstraint distConstraint = new Distance(arrangement[prefs[i][0] - 1],
+					arrangement[prefs[i][1] - 1], distance);
+			PrimitiveConstraint reif = new Reified(distConstraint, satisfied[i]);
+			store.impose(reif);
 		}
-		
-		IntVar cost = new IntVar(store, "cost", 10, numPrefs);
-		store.impose(new Sum(satisfied, cost));
+
+		IntVar cost = new IntVar(store, "cost", 0, numPrefs);
+		IntVar nCost = new IntVar(store, "nCost", -numPrefs, 0);
+		store.impose(new Count(satisfied, cost, 1));
+		store.impose(new XplusYeqC(cost, nCost, 0));
 		Search<IntVar> search = new DepthFirstSearch<IntVar>();
 		SelectChoicePoint<IntVar> select = new SimpleSelect<IntVar>(arrangement, null, new IndomainMin());
-		boolean res = search.labeling(store, select, cost);
+		boolean res = search.labeling(store, select, nCost);
+		System.out.println("Cost: " + cost.value());
+	}
 
+	static int sum(IntVar[] vars) {
+		int sum = 0;
+		for (IntVar v : vars) {
+			sum = v.value();
+		}
+		return sum;
 	}
 }
