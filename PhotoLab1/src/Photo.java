@@ -1,17 +1,32 @@
 import java.util.Arrays;
 
+import org.jacop.constraints.AbsXeqY;
 import org.jacop.constraints.Alldiff;
+import org.jacop.constraints.Constraint;
 import org.jacop.constraints.Distance;
+import org.jacop.constraints.Element;
+import org.jacop.constraints.IfThenElse;
+import org.jacop.constraints.LinearInt;
+import org.jacop.constraints.Max;
+import org.jacop.constraints.Min;
+import org.jacop.constraints.Or;
+import org.jacop.constraints.PrimitiveConstraint;
+import org.jacop.constraints.Sum;
+import org.jacop.constraints.SumInt;
+import org.jacop.constraints.XeqC;
+import org.jacop.constraints.XplusCeqZ;
+import org.jacop.constraints.knapsack.Knapsack;
 import org.jacop.core.*;
+import org.jacop.floats.search.Optimize;
 import org.jacop.search.DepthFirstSearch;
 import org.jacop.search.IndomainMax;
 import org.jacop.search.IndomainMin;
+import org.jacop.search.LargestDomain;
 import org.jacop.search.Search;
 import org.jacop.search.SelectChoicePoint;
 import org.jacop.search.SimpleSelect;
 
 public class Photo {
-
 	public static void main(String[] args) {
 		int n = 9; // Number of people in photo.
 		int n_prefs = 17;
@@ -23,54 +38,31 @@ public class Photo {
 
 	static void solve(int n, int numPrefs, int[][] prefs) {
 		Store store = new Store();
-		IntVar[] preferences = new IntVar[n];
-	
-		// Define all preferences for each person
+		IntVar[] arrangement = new IntVar[n]; // Define possible positions of persons
+		IntVar[] satisfied = new IntVar[numPrefs];
 		for (int i = 1; i <= n; i++) {
-			int[] numbers = new int[n];
-			int counter = 0; 
-			for (int[] p: prefs) {
-				if(p[0] == i) {
-					numbers[counter] = p[1];
-					counter++;
-				}
-			}
-			IntVar pref = new IntVar(store, "pref" + i);
-			for(int number : numbers) {
-				if(number != 0) {
-					pref.addDom(number, number);
-				}
-			}
-			preferences[i-1] = pref;
+			arrangement[i - 1] = new IntVar(store, "p" + i, 1, n);
 		}
-	 
-		IntVar[] positions = new IntVar[n];  // Define possible positions of persons
-		for (int i = 1; i <= n; i++) {
-			positions[i-1] = new IntVar(store, "p" + i, 1, 9);
+		store.impose(new Alldiff(arrangement)); // All positions must be different.
+		for (int i = 1; i <= numPrefs; i++) {
+			IntVar sat = new IntVar(store, "sat" + 1, 0, numPrefs);
+			satisfied[i - 1] = sat;
 		}
-		store.impose(new Alldiff(positions)); // All positions must be different.
-		
-		
-		// Add constraints, preferences == neighbor == distance of 1 at most.
-		IntVar dist = new IntVar(store, "distance", 1, 1);
-		for(int i = 0; i < n; i++) {
-			IntVar preference = preferences[i];
-			if(!preference.dom().isEmpty()) {
-				int[] domain = preference.dom().toIntArray();
-				for(int pref : domain) {
-					store.impose(new Distance(positions[i], positions[pref-1], dist));
-				}
-			}
+
+		for (int i = 0; i < numPrefs; i++) {
+			PrimitiveConstraint or = new Or(
+					new XplusCeqZ(arrangement[prefs[i][0] - 1], 1, arrangement[prefs[i][1] - 1]),
+					new XplusCeqZ(arrangement[prefs[i][0] - 1], -1, arrangement[prefs[i][1] - 1]));
+			PrimitiveConstraint one = new XeqC(satisfied[i], 1);
+			PrimitiveConstraint zero = new XeqC(satisfied[i], 0);
+			store.impose(new IfThenElse(or, one, zero));
 		}
 		
-		System.out.println("CONSISTENT? : " + store.consistency()); // Is consistent?
+		IntVar cost = new IntVar(store, "cost", 10, numPrefs);
+		store.impose(new Sum(satisfied, cost));
 		Search<IntVar> search = new DepthFirstSearch<IntVar>();
-		SelectChoicePoint<IntVar> select = new SimpleSelect<IntVar>(positions, null, new IndomainMin());
-		search.setPrintInfo(true);
-		boolean result = search.labeling(store, select);
-		System.out.println(result);
-		System.out.println(Arrays.asList(positions));
+		SelectChoicePoint<IntVar> select = new SimpleSelect<IntVar>(arrangement, null, new IndomainMin());
+		boolean res = search.labeling(store, select, cost);
 
 	}
-
 }
