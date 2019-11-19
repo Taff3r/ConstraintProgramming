@@ -50,7 +50,6 @@ public class PhotoDistance {
 		Search<IntVar> search = new DepthFirstSearch<IntVar>();
 		SelectChoicePoint<IntVar> select = new SimpleSelect<IntVar>(arrangement, null, new IndomainMin());
 		boolean res = search.labeling(store, select, maxDistance);
-		System.out.println(Arrays.asList(maxDistance));
 
 	}
 }

@@ -12,6 +12,7 @@ import org.jacop.constraints.PrimitiveConstraint;
 import org.jacop.constraints.Reified;
 import org.jacop.constraints.Sum;
 import org.jacop.constraints.XeqC;
+import org.jacop.constraints.XltY;
 import org.jacop.constraints.XmulCeqZ;
 import org.jacop.constraints.XmulYeqC;
 import org.jacop.constraints.XplusCeqZ;
@@ -21,6 +22,7 @@ import org.jacop.core.Store;
 import org.jacop.floats.constraints.PminusQeqR;
 import org.jacop.search.DepthFirstSearch;
 import org.jacop.search.IndomainMin;
+import org.jacop.search.MostConstrainedDynamic;
 import org.jacop.search.Search;
 import org.jacop.search.SelectChoicePoint;
 import org.jacop.search.SimpleSelect;
@@ -45,7 +47,7 @@ public class Photo {
 		}
 		store.impose(new Alldiff(arrangement)); // All positions must be different.
 		for (int i = 1; i <= numPrefs; i++) {
-			IntVar sat = new IntVar(store, "sat" + 1, 0, numPrefs);
+			IntVar sat = new IntVar(store, "sat" + 1, 0, 1);
 			satisfied[i - 1] = sat;
 		}
 		IntVar distance = new IntVar(store, "distance", 1, 1);
@@ -56,13 +58,13 @@ public class Photo {
 			PrimitiveConstraint reif = new Reified(distConstraint, satisfied[i]);
 			store.impose(reif);
 		}
-
+		//store.impose(new XltY(arrangement[0], arrangement[1]));
 		IntVar cost = new IntVar(store, "cost", 0, numPrefs);
 		IntVar nCost = new IntVar(store, "nCost", -numPrefs, 0);
 		store.impose(new Count(satisfied, cost, 1));
 		store.impose(new XplusYeqC(cost, nCost, 0));
 		Search<IntVar> search = new DepthFirstSearch<IntVar>();
-		SelectChoicePoint<IntVar> select = new SimpleSelect<IntVar>(arrangement, null, new IndomainMin());
+		SelectChoicePoint<IntVar> select = new SimpleSelect<IntVar>(arrangement, new MostConstrainedDynamic(), new IndomainMin());
 		boolean res = search.labeling(store, select, nCost);
 		System.out.println("Cost: " + cost.value());
 	}
