@@ -81,8 +81,8 @@ public class SimpleDFS {
 	/**
 	 * This function is called recursively to assign variables one by one.
 	 */
-	public boolean label(IntVar[] vars) {
-
+	public boolean label(IntVar[] vars, Metric m) {
+		m.newNode();
 		if (trace) {
 			for (int i = 0; i < vars.length; i++)
 				System.out.print(vars[i] + " ");
@@ -109,6 +109,7 @@ public class SimpleDFS {
 
 		if (!consistent) {
 			// Failed leaf of the search tree
+			m.wrong();
 			return false;
 		} else { // consistent
 
@@ -132,7 +133,7 @@ public class SimpleDFS {
 
 			// choice point imposed.
 
-			consistent = label(choice.getSearchVariables());
+			consistent = label(choice.getSearchVariables(), m);
 
 			if (consistent) {
 				levelDown();
@@ -145,13 +146,14 @@ public class SimpleDFS {
 
 				// negated choice point imposed.
 
-				consistent = label(vars);
+				consistent = label(vars, m);
 
 				levelDown();
 
 				if (consistent) {
 					return true;
 				} else {
+					m.wrong();
 					return false;
 				}
 			}

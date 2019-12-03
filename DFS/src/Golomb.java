@@ -163,12 +163,12 @@ public class Golomb {
 
 		IntVar cost = numbers[numbers.length - 1];
 
-		SimpleDFS search = new SimpleDFS(store);
+		SplitSearch1 search = new SplitSearch1(store);
 		search.setVariablesToReport(numbers);
 		search.setCostVariable(cost);
-
-		boolean result = search.label(numbers);
-
+		Metric m = new Metric();
+		boolean result = search.label(numbers, m);
+		System.out.println(m.toString());
 		System.out.println(result);
 
 	}

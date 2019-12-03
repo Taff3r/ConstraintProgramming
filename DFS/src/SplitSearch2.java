@@ -34,6 +34,8 @@ import org.jacop.constraints.Not;
 import org.jacop.constraints.PrimitiveConstraint;
 import org.jacop.constraints.XeqC;
 import org.jacop.constraints.XgtC;
+import org.jacop.constraints.XgteqC;
+import org.jacop.constraints.XltC;
 import org.jacop.constraints.XlteqC;
 import org.jacop.core.FailException;
 import org.jacop.core.IntDomain;
@@ -47,7 +49,7 @@ import org.jacop.core.Store;
  * @version 4.1
  */
 
-public class SplitSearch1 {
+public class SplitSearch2 {
 
 	boolean trace = false;
 
@@ -76,15 +78,15 @@ public class SplitSearch1 {
 	 */
 	public IntVar costVariable = null;
 
-	public SplitSearch1(Store s) {
+	public SplitSearch2(Store s) {
 		store = s;
 	}
 
 	/**
 	 * This function is called recursively to assign variables one by one.
 	 */
-	public boolean label(IntVar[] vars, Metric m) {
-		m.newNode();
+	public boolean label(IntVar[] vars) {
+
 		if (trace) {
 			for (int i = 0; i < vars.length; i++)
 				System.out.print(vars[i] + " ");
@@ -130,28 +132,26 @@ public class SplitSearch1 {
 			choice = new ChoicePoint(vars);
 			levelUp();
 			if (choice.min() == choice.max()) {
-				consistent = label(choice.getSearchVariables(), m);
+				consistent = label(choice.getSearchVariables());
 
 				levelDown();
 				if (consistent) {
 					return true;
 				} else {
-					m.wrong();
 					return false;
 				}
 			} else {
 
 				int mid = (choice.max() + choice.min()) / 2;
-				choice.imposeLTEQ(store, mid);
-				consistent = label(vars, m);
+				choice.imposeGTEQ(store, mid);
+				consistent = label(vars);
 				levelDown();
 				if (consistent) {
 					return true;
 				} else {
 					restoreLevel();
-					choice.imposeGT(store, mid);
-					m.wrong();
-					return label(vars, m);
+					choice.imposeLT(store, mid);
+					return label(vars);
 				}
 			}
 		}
@@ -242,19 +242,19 @@ public class SplitSearch1 {
 			this.value = this.var.min();
 		}
 
-		/**
+		/**t
 		 * example constraint assigning a selected value
 		 */
 		public PrimitiveConstraint getConstraint() {
 			return new XeqC(var, value);
 		}
 
-		void imposeLTEQ(Store s, int mid) {
-			s.impose(new XlteqC(var, mid));
+		void imposeGTEQ(Store s, int mid) {
+			s.impose(new XgteqC(var, mid));
 		}
 		
-		void imposeGT(Store s, int mid) {
-			s.impose(new XgtC(var, mid));
+		void imposeLT(Store s, int mid) {
+			s.impose(new XltC(var, mid));
 		}
 	}
 }
