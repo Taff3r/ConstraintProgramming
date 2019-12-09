@@ -142,7 +142,7 @@ public class SplitSearch2 {
 				}
 			} else {
 
-				int mid = (choice.max() + choice.min()) / 2;
+				int mid = ((choice.max() + choice.min()) / 2) + ((choice.max() + choice.min()) % 2);
 				choice.imposeGTEQ(store, mid);
 				consistent = label(vars);
 				levelDown();

@@ -101,6 +101,7 @@ public class SplitSearch1 {
 				if (costVariable.min() <= costValue - 1)
 					costVariable.domain.in(store.level, costVariable, costVariable.min(), costValue - 1);
 				else
+					System.out.println("hmmm");
 					return false;
 			} catch (FailException f) {
 				return false;
@@ -111,6 +112,7 @@ public class SplitSearch1 {
 
 		if (!consistent) {
 			// Failed leaf of the search tree
+			m.wrong();
 			return false;
 		} else { // consistent
 
@@ -150,7 +152,6 @@ public class SplitSearch1 {
 				} else {
 					restoreLevel();
 					choice.imposeGT(store, mid);
-					m.wrong();
 					return label(vars, m);
 				}
 			}
